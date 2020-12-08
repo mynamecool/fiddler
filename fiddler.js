@@ -1,6 +1,12 @@
 import System;
 import System.Windows.Forms;
+import System.Security.Cryptography;
 import Fiddler;
+import System.Text;
+import System.Threading;
+import System.IO;
+import System.Net;
+import System.Net.Sockets;
 
 // INTRODUCTION
 //
@@ -13,7 +19,7 @@ import Fiddler;
 //
 // The original version of this file is named SampleRules.js and it is in the
 // \Program Files\Fiddler\ folder. When Fiddler first runs, it creates a copy named
-// CustomRules.js inside your \Documents\Fiddler2\Scripts folder. If you make a 
+// CustomRules.js inside your \Documents\Fiddler2\Scripts folder. If you make a
 // mistake in editing this file, simply delete the CustomRules.js file and restart
 // Fiddler. A fresh copy of the default rules will be created from the original
 // sample rules file.
@@ -31,6 +37,201 @@ import Fiddler;
 
 class Handlers
 {
+    public static var isautocap=1;
+    public static var filterUrl="panda.tv";
+    public static var whiteurl="/weekly";
+
+    static function connect(server: String,port: int):Socket{
+        var hostEntry =Dns.GetHostEntry(server);
+        for (var iCtr = 0; iCtr < Dns.GetHostAddresses(server).length;iCtr++) {
+            var address = Dns.GetHostAddresses(server)[iCtr];
+            var ipe = new IPEndPoint(address, port);
+            var tempSocket = new Socket(ipe.AddressFamily,SocketType.Stream, ProtocolType.Tcp);
+            tempSocket.Connect(ipe);
+            if (tempSocket.Connected) {return tempSocket;}
+            else {
+            continue;}}}
+
+    static function mock(server: String,port: int ,msg: String):String{
+        var request = msg;
+        var bytesSent = Encoding.ASCII.GetBytes(request);
+        var bytesReceived = new System.Byte[256];
+        var s = connect(server, port);
+        s.Send(bytesSent, bytesSent.length,0);
+        var bytes = 0;
+        var body = "";
+        do {
+            bytes = s.Receive(bytesReceived,bytesReceived.length, 0);
+            body = body + System.Text.Encoding.UTF8.GetString(bytesReceived, 0, bytes);
+        } while (bytes > 0);
+        s.Disconnect(true)
+        return body;
+    }
+	public static RulesOption("Hide 304s")
+	BindPref("fiddlerscript.rules.Hide304s")
+	var m_Hide304s: boolean = false;
+
+	// Cause Fiddler to override the Accept-Language header with one of the defined values
+	public static RulesOption("Request &Japanese Content")
+	var m_Japanese: boolean = false;
+
+	// Automatic Authentication
+	public static RulesOption("&Automatically Authenticate")
+	BindPref("fiddlerscript.rules.AutoAuth")
+	var m_AutoAuth: boolean = false;
+
+	// Cause Fiddler to override the User-Agent header with one of the defined values
+	// The page http://browserscope2.org/browse?category=selectors&ua=Mobile%20Safari is a good place to find updated versions of these
+	RulesString("&User-Agents", true)
+	BindPref("fiddlerscript.ephemeral.UserAgentString")
+	RulesStringValue(0,"Netscape &3", "Mozilla/3.0 (Win95; I)")
+	RulesStringValue(1,"WinPhone8.1", "Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 520) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537")
+	RulesStringValue(2,"&Safari5 (Win7)", "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1")
+	RulesStringValue(3,"Safari9 (Mac)", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11) AppleWebKit/601.1.56 (KHTML, like Gecko) Version/9.0 Safari/601.1.56")
+	RulesStringValue(4,"iPad", "Mozilla/5.0 (iPad; CPU OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12F5027d Safari/600.1.4")
+	RulesStringValue(5,"iPhone6", "Mozilla/5.0 (iPhone; CPU iPhone OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12F70 Safari/600.1.4")
+	RulesStringValue(6,"IE &6 (XPSP2)", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)")
+	RulesStringValue(7,"IE &7 (Vista)", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; SLCC1)")
+	RulesStringValue(8,"IE 8 (Win2k3 x64)", "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.2; WOW64; Trident/4.0)")
+	RulesStringValue(9,"IE &8 (Win7)", "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0)")
+	RulesStringValue(10,"IE 9 (Win7)", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)")
+	RulesStringValue(11,"IE 10 (Win8)", "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)")
+	RulesStringValue(12,"IE 11 (Surface2)", "Mozilla/5.0 (Windows NT 6.3; ARM; Trident/7.0; Touch; rv:11.0) like Gecko")
+	RulesStringValue(13,"IE 11 (Win8.1)", "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko")
+	RulesStringValue(14,"Edge (Win10)", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.11082")
+	RulesStringValue(15,"&Opera", "Opera/9.80 (Windows NT 6.2; WOW64) Presto/2.12.388 Version/12.17")
+	RulesStringValue(16,"&Firefox 3.6", "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.7) Gecko/20100625 Firefox/3.6.7")
+	RulesStringValue(17,"&Firefox 43", "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0")
+	RulesStringValue(18,"&Firefox Phone", "Mozilla/5.0 (Mobile; rv:18.0) Gecko/18.0 Firefox/18.0")
+	RulesStringValue(19,"&Firefox (Mac)", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0")
+	RulesStringValue(20,"Chrome (Win)", "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.48 Safari/537.36")
+	RulesStringValue(21,"Chrome (Android)", "Mozilla/5.0 (Linux; Android 5.1.1; Nexus 5 Build/LMY48B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.78 Mobile Safari/537.36")
+	RulesStringValue(22,"ChromeBook", "Mozilla/5.0 (X11; CrOS x86_64 6680.52.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.74 Safari/537.36")
+	RulesStringValue(23,"GoogleBot Crawler", "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
+	RulesStringValue(24,"Kindle Fire (Silk)", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_3; en-us; Silk/1.0.22.79_10013310) AppleWebKit/533.16 (KHTML, like Gecko) Version/5.0 Safari/533.16 Silk-Accelerated=true")
+	RulesStringValue(25,"&Custom...", "%CUSTOM%")
+	public static var sUA: String = null;
+	
+	RulesString("ÁßªÂä®ÁΩëÁªúÊ®°Êãü",true)
+	RulesStringValue(0,"2G", "490")
+	RulesStringValue(1,"3G", "100")
+	RulesStringValue(2,"4G", "10")
+	public static var m_networkSpeed: String = null; 
+
+
+
+	// Cause Fiddler to delay HTTP traffic to simulate typical 56k modem conditions
+	public static RulesOption("Simulate &Modem Speeds", "Per&formance")
+	var m_SimulateModem: boolean = false;
+	public static RulesOption("2G", "Per&formance")
+	var m_SimulateModem_2g: boolean = false;
+  
+	public static RulesOption("3G", "Per&formance")
+	var m_SimulateModem_3g: boolean = false;
+
+	public static RulesOption("4G", "Per&formance")
+	var m_SimulateModem_4g: boolean = false;
+	// Removes HTTP-caching related headers and specifies "no-cache" on requests and responses
+	public static RulesOption("&Disable Caching", "Per&formance")
+	var m_DisableCaching: boolean = false;
+
+	public static RulesOption("Cache Always &Fresh", "Per&formance")
+	var m_AlwaysFresh: boolean = false;
+	//public static RulesOption("Ê†áËÆ∞ËøîÂõûÂÄºÊåáÂÆöËøîÂõûÂÄº")
+	//var m_showMarkString: boolean = false;
+	public static RulesOption("ÊõøÊç¢ËøîÂõûÂÄºÊåáÂÆöËøîÂõûÂÄº")
+	var changeflag: boolean = false;
+	public static RulesOption("ÊõøÊç¢Cookie")
+	var changecookie: boolean = false;
+    static function OnBeforeResponse(oSession: Session) {
+		if (changeflag){
+			var textpath = "D:\\ceshi.txt";
+			var allnum = File.ReadAllLines(textpath);
+			//FiddlerObject.alert(allnum)
+			for(var i = 0; i<allnum.Length;i++){
+				var strs;
+				strs = allnum[i].split("^");
+				if(changeflag && oSession.uriContains(strs[0])){
+					//FiddlerObject.alert(1111)
+					oSession.utilReplaceInResponse(strs[1],strs[2]);
+				}
+				}
+				}
+		
+        if (m_Hide304s && oSession.responseCode == 304) {
+            oSession["ui-hide"] = "true";
+        }
+        //var hostmatch = oSession.hostname.match(filterUrl)
+        var hostmatch =oSession.HostnameIs(filterUrl)
+        if (isautocap && hostmatch && oSession.responseCode == 200) {
+            oSession.utilDecodeResponse()
+            var body = System.Text.Encoding.UTF8.GetString(oSession.responseBodyBytes)
+            var jquery = body.match(/(?i)jQuery(.*)/g);
+            if (jquery) {
+                var rawbody = body.match(/(\{.*\})/g);
+            }else{
+                var rawbody = body
+            }
+            try{
+                rawbody = rawbody.replace(/([\u4E00-\u9FA5]|[\uFE30-\uFFA0])/g,function(newStr){
+                        return "\\u" + newStr.charCodeAt(0).toString(16);
+                    });
+            }catch (e) {}
+            //MessageBox.Show(rawbody)
+            var	api = oSession.PathAndQuery.split('?')[0]
+            var j = Fiddler.WebFormats.JSON.JsonDecode(rawbody)
+            if ( api == whiteurl || typeof(j.JSONObject) == "object" && Object.prototype.toString.call(j.JSONObject).toLowerCase() == "[object hashtable]" && !j.JSONObject.length) {
+                try {
+
+                    //var api = oSession.PathAndQuery.split('?')[0]
+                    //var param = oSession.PathAndQuery.split('?')[1]
+                    //rawbody = api + ':'+ param + rawbody
+                    rawbody = oSession.PathAndQuery +':'+ rawbody
+                    var mockbody = mock('127.0.0.1', 8390, rawbody)
+                    j = Fiddler.WebFormats.JSON.JsonDecode(mockbody)
+                    if (typeof(j.JSONObject) == "object" && Object.prototype.toString.call(j.JSONObject).toLowerCase() == "[object hashtable]" && !j.JSONObject.length) {
+                        if (j.JSONObject['mock']['delay'] == '2g') {
+                            oSession["response-trickle-delay"] = "833"
+                        }
+                        else {
+                            oSession["response-trickle-delay"] = j.JSONObject['mock']['delay']
+                        }
+
+                        if (j.JSONObject['mock']['responsecode'] == '200') {
+                            delete j.JSONObject['mock']
+                            if (api == whiteurl){
+                                var mockbytes = Fiddler.WebFormats.JSON.JsonEncode(j.JSONObject['body'])
+                            }
+                            else{
+                                var mockbytes = Fiddler.WebFormats.JSON.JsonEncode(j.JSONObject)
+                                //mockbody = System.Text.Encoding.UTF8.GetBytes(mockbytes)
+                                //oSession.RequestBody = mockbody;
+                            }
+                            oSession.utilSetResponseBody(mockbytes)
+                            oSession["ui-color"] = "blue";
+                            oSession["ui-backcolor"] = "yellow";
+
+                        } else {
+                            oSession.responseCode = int(j.JSONObject['mock']['responsecode'])
+                            oSession["ui-color"] = "red";
+                            oSession["ui-backcolor"] = "yellow";
+                        }
+                    }
+                    else {
+                        oSession.utilSetResponseBody(mockbody)
+                        oSession["ui-color"] = "";
+                        oSession["ui-backcolor"] = "yellow";
+                    }
+                    //MessageBox.Show(System.Text.Encoding.UTF8.GetString(oSession.responseBodyBytes))
+                    //MessageBox.Show(oSession["response-trickle-delay"])
+                }
+                catch (e) {//MessageBox.Show(e)
+
+                }
+            }
+        }
+    }
+
     // *****************
     //
     // This is the Handlers class. Pretty much everything you ever add to FiddlerScript
@@ -67,79 +268,26 @@ class Handlers
 
     // You can create a custom menu like so:
     /*
-    QuickLinkMenu("&Links") 
+    QuickLinkMenu("&Links")
     QuickLinkItem("IE GeoLoc TestDrive", "http://ie.microsoft.com/testdrive/HTML5/Geolocation/Default.html")
     QuickLinkItem("FiddlerCore", "http://fiddler2.com/fiddlercore")
     public static function DoLinksMenu(sText: String, sAction: String)
     {
     Utilities.LaunchHyperlink(sAction);
     }
+        
     */
 
-    public static RulesOption("“˛≤ÿ 304s")
-    BindPref("fiddlerscript.rules.Hide304s")
-    var m_Hide304s: boolean = false;
+   
 
-    // Cause Fiddler to override the Accept-Language header with one of the defined values
-    public static RulesOption("«Î«Û»’”Ôƒ⁄»›(&J)")
-    var m_Japanese: boolean = false;
-
-    // Automatic Authentication
-    public static RulesOption("◊‘∂Ø—È÷§(&A)")
-    BindPref("fiddlerscript.rules.AutoAuth")
-    var m_AutoAuth: boolean = false;
-
-    // Cause Fiddler to override the User-Agent header with one of the defined values
-    // The page http://browserscope2.org/browse?category=selectors&ua=Mobile%20Safari is a good place to find updated versions of these
-    RulesString("”√ªß¥˙¿Ì(&U)", true) 
-    BindPref("fiddlerscript.ephemeral.UserAgentString")
-    RulesStringValue(0,"Netscape &3", "Mozilla/3.0 (Win95; I)")
-    RulesStringValue(1,"WinPhone8.1", "Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 520) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537")
-    RulesStringValue(2,"&Safari5 (Win7)", "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1")
-    RulesStringValue(3,"Safari9 (Mac)", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11) AppleWebKit/601.1.56 (KHTML, like Gecko) Version/9.0 Safari/601.1.56")
-    RulesStringValue(4,"iPad", "Mozilla/5.0 (iPad; CPU OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12F5027d Safari/600.1.4")
-    RulesStringValue(5,"iPhone6", "Mozilla/5.0 (iPhone; CPU iPhone OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12F70 Safari/600.1.4")
-    RulesStringValue(6,"IE &6 (XPSP2)", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)")
-    RulesStringValue(7,"IE &7 (Vista)", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; SLCC1)")
-    RulesStringValue(8,"IE 8 (Win2k3 x64)", "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.2; WOW64; Trident/4.0)")
-    RulesStringValue(9,"IE &8 (Win7)", "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0)")
-    RulesStringValue(10,"IE 9 (Win7)", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)")
-    RulesStringValue(11,"IE 10 (Win8)", "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)")
-    RulesStringValue(12,"IE 11 (Surface2)", "Mozilla/5.0 (Windows NT 6.3; ARM; Trident/7.0; Touch; rv:11.0) like Gecko")
-    RulesStringValue(13,"IE 11 (Win8.1)", "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko")
-    RulesStringValue(14,"Edge (Win10)", "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.11082")
-    RulesStringValue(15,"&Opera", "Opera/9.80 (Windows NT 6.2; WOW64) Presto/2.12.388 Version/12.17")
-    RulesStringValue(16,"&Firefox 3.6", "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.7) Gecko/20100625 Firefox/3.6.7")
-    RulesStringValue(17,"&Firefox 43", "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0")
-    RulesStringValue(18,"&Firefox Phone", "Mozilla/5.0 (Mobile; rv:18.0) Gecko/18.0 Firefox/18.0")
-    RulesStringValue(19,"&Firefox (Mac)", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0")
-    RulesStringValue(20,"Chrome (Win)", "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.48 Safari/537.36")
-    RulesStringValue(21,"Chrome (Android)", "Mozilla/5.0 (Linux; Android 5.1.1; Nexus 5 Build/LMY48B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.78 Mobile Safari/537.36")
-    RulesStringValue(22,"ChromeBook", "Mozilla/5.0 (X11; CrOS x86_64 6680.52.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.74 Safari/537.36")
-    RulesStringValue(23,"GoogleBot Crawler", "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
-    RulesStringValue(24,"Kindle Fire (Silk)", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_3; en-us; Silk/1.0.22.79_10013310) AppleWebKit/533.16 (KHTML, like Gecko) Version/5.0 Safari/533.16 Silk-Accelerated=true")
-    RulesStringValue(25,"◊‘∂®“Â(&C)...", "%CUSTOM%")
-    public static var sUA: String = null;
-
-    // Cause Fiddler to delay HTTP traffic to simulate typical 56k modem conditions
-    public static RulesOption("ƒ£ƒ‚µ˜÷∆Ω‚µ˜∆˜ÀŸ∂»(&M)", "–‘ƒ‹(&F)")
-    var m_SimulateModem: boolean = false;
-
-    // Removes HTTP-caching related headers and specifies "no-cache" on requests and responses
-    public static RulesOption("Ω˚”√ª∫¥Ê(&D)", "–‘ƒ‹(&F)")
-    var m_DisableCaching: boolean = false;
-
-    public static RulesOption(" º÷’±£≥÷◊Ó–¬(&F)", "–‘ƒ‹(&F)")
-    var m_AlwaysFresh: boolean = false;
-        
     // Force a manual reload of the script file.  Resets all
     // RulesOption variables to their defaults.
-    public static ToolsAction("÷ÿ÷√Ω≈±æ")
-    function DoManualReload() { 
+    public static ToolsAction("Reset Script")
+    function DoManualReload() {
         FiddlerObject.ReloadScript();
     }
 
-    public static ContextAction("Ω‚¬ÎÀ˘—°ª·ª∞")
+    public static ContextAction("Decode Selected Sessions")
     function DoRemoveEncoding(oSessions: Session[]) {
         for (var x:int = 0; x < oSessions.Length; x++){
             oSessions[x].utilDecodeRequest();
@@ -147,6 +295,13 @@ class Handlers
         }
         UI.actUpdateInspector(true,true);
     }
+
+    public static ContextAction("Bpu the Session")
+    function DoBpuSession(oSessions: Session[]) {
+        MessageBox.Show("bpu " + oSessions[0].fullUrl);
+    }
+
+
 
     static function OnBeforeRequest(oSession: Session) {
         // Sample Rule: Color ASPX requests in RED
@@ -159,12 +314,26 @@ class Handlers
         // if (oSession.uriContains("/sandbox/")) {
         //     oSession.oFlags["x-breakrequest"] = "yup";	// Existence of the x-breakrequest flag creates a breakpoint; the "yup" value is unimportant.
         // }
-
+		if (oSession.HostnameIs("app.10brandchina.com") || oSession.HostnameIs("app.top-10.cn")){
+			oSession["ui-color"]="purple";
+			}
+		if(changecookie && oSession.HostnameIs("www.51shantou.com")){
+			//FiddlerObject.alert(1111);
+			oSession.oRequest.headers.Remove("Cookie");
+			oSession.oRequest.headers.Add("Cookie","cpz_username=15930762890; cpz_openinfo=%257B%2522uid%2522%253A13%252C%2522token%2522%253A%252293d764d505b599af82b2f9e63e764c00%2522%257D; PHPSESSID=jo04coqsd6j4dcjenjq0eo66v3");
+			//oSession.oRequest["Cookie"] = "PHPSESSID=27713v3evbfr2668hm99m5b6lb; cpz_openinfo=%257B%2522uid%2522%253A13%252C%2522token%2522%253A%2522bb964e473272e47d4e78570b1661fd12%2522%257D; cpz_username=15930762890";
+			}
+		/*
+		if (oSession.HostnameIs("110.249.168.203")){
+			oSession.utilDecodeRequest();
+			var str121 = oSession.GetRequestBodyAsString();
+			FiddlerObject.alert(str121)
+			}*/
         if ((null != gs_ReplaceToken) && (oSession.url.indexOf(gs_ReplaceToken)>-1)) {   // Case sensitive
-            oSession.url = oSession.url.Replace(gs_ReplaceToken, gs_ReplaceTokenWith); 
+            oSession.url = oSession.url.Replace(gs_ReplaceToken, gs_ReplaceTokenWith);
         }
         if ((null != gs_OverridenHost) && (oSession.host.toLowerCase() == gs_OverridenHost)) {
-            oSession["x-overridehost"] = gs_OverrideHostWith; 
+            oSession["x-overridehost"] = gs_OverrideHostWith;
         }
 
         if ((null!=bpRequestURI) && oSession.uriContains(bpRequestURI)) {
@@ -178,12 +347,43 @@ class Handlers
         if ((null!=uiBoldURI) && oSession.uriContains(uiBoldURI)) {
             oSession["ui-bold"]="QuickExec";
         }
-
+		function moni(min, max) {
+			return Math.round(Math.random()*(max-min)+min);
+		}
+		
+		if (m_networkSpeed){
+			FiddlerObject.log(moni(parseInt(m_networkSpeed),parseInt(m_networkSpeed)+10));
+			oSession["request-trickle-delay"] = "" + moni(parseInt(m_networkSpeed),parseInt(m_networkSpeed)+10); 
+			oSession["response-trickle-delay"] = "" + moni(parseInt(m_networkSpeed),parseInt(m_networkSpeed)+10); 
+		}
+		switch(1==1){
+			case m_SimulateModem_2g:
+				FiddlerObject.log(moni(400,500));
+				// Delay sends by 300ms per KB uploaded.
+				oSession["request-trickle-delay"] = "" + moni(400,500); 
+				// Delay receives by 150ms per KB downloaded.
+				oSession["response-trickle-delay"] ="" + moni(400,500);
+				break;
+			case m_SimulateModem_3g:
+				FiddlerObject.log(moni(100,120));
+				// Delay sends by 300ms per KB uploaded.
+				oSession["request-trickle-delay"] = "" + moni(100,120); 
+				// Delay receives by 150ms per KB downloaded.
+				oSession["response-trickle-delay"] ="" + moni(100,120);
+				break;
+			case m_SimulateModem_4g:
+				FiddlerObject.log(moni(14,14));
+				// Delay sends by 300ms per KB uploaded.
+				oSession["request-trickle-delay"] = "" + moni(14,16); 
+				// Delay receives by 150ms per KB downloaded.
+				oSession["response-trickle-delay"] ="" + moni(29,31);
+				break;
+		}
         if (m_SimulateModem) {
             // Delay sends by 300ms per KB uploaded.
-            oSession["request-trickle-delay"] = "10000"; 
+            oSession["request-trickle-delay"] = "300";
             // Delay receives by 150ms per KB downloaded.
-            oSession["response-trickle-delay"] = "10000"; 
+            oSession["response-trickle-delay"] = "150";
         }
 
         if (m_DisableCaching) {
@@ -194,7 +394,7 @@ class Handlers
 
         // User-Agent Overrides
         if (null != sUA) {
-            oSession.oRequest["User-Agents"] = sUA; 
+            oSession.oRequest["User-Agent"] = sUA;
         }
 
         if (m_Japanese) {
@@ -202,11 +402,11 @@ class Handlers
         }
 
         if (m_AutoAuth) {
-            // Automatically respond to any authentication challenges using the 
+            // Automatically respond to any authentication challenges using the
             // current Fiddler user's credentials. You can change (default)
             // to a domain\\username:password string if preferred.
             //
-            // WARNING: This setting poses a security risk if remote 
+            // WARNING: This setting poses a security risk if remote
             // connections are permitted!
             oSession["X-AutoAuth"] = "(default)";
         }
@@ -217,29 +417,13 @@ class Handlers
             oSession.responseCode = 304;
             oSession["ui-backcolor"] = "Lavender";
         }
-        //–ﬁ∏ƒ–¥»ÎŒƒº˛
-        /*
-        if (oSession.fullUrl.Contains("app.10brandchina.com")) { 
-        var fso;
-        var file; 
-        fso = new ActiveXObject("Scripting.FileSystemObject");
-        //Œƒº˛±£¥Ê¬∑æ∂£¨ø…◊‘∂®“Â 
-        file = fso.OpenTextFile("E:\date.txt",8 ,true); 
-        file.writeLine(oSession.url); 
-        //file.writeLine("Request header:" + "\n" + oSession.oRequest.headers); 
-        file.writeLine(oSession.GetRequestBodyAsString()); 
-        //file.writeLine("\n"); 
-        file.close(); 
-
-        }
-        */
     }
 
     // This function is called immediately after a set of request headers has
     // been read from the client. This is typically too early to do much useful
     // work, since the body hasn't yet been read, but sometimes it may be useful.
     //
-    // For instance, see 
+    // For instance, se
     // http://blogs.msdn.com/b/fiddler/archive/2011/11/05/http-expect-continue-delays-transmitting-post-bodies-by-up-to-350-milliseconds.aspx
     // for one useful thing you can do with this handler.
     //
@@ -252,14 +436,14 @@ class Handlers
     */
 
     //
-    // If a given session has response streaming enabled, then the OnBeforeResponse function 
+    // If a given session has response streaming enabled, then the OnBeforeResponse function
     // is actually called AFTER the response was returned to the client.
     //
-    // In contrast, this OnPeekAtResponseHeaders function is called before the response headers are 
-    // sent to the client (and before the body is read from the server).  Hence this is an opportune time 
-    // to disable streaming (oSession.bBufferResponse = true) if there is something in the response headers 
+    // In contrast, this OnPeekAtResponseHeaders function is called before the response headers are
+    // sent to the client (and before the body is read from the server).  Hence this is an opportune time
+    // to disable streaming (oSession.bBufferResponse = true) if there is something in the response headers
     // which suggests that tampering with the response body is necessary.
-    // 
+    //
     // Note: oSession.responseBodyBytes is not available within this function!
     //
     static function OnPeekAtResponseHeaders(oSession: Session) {
@@ -273,146 +457,16 @@ class Handlers
             oSession["x-breakresponse"]="status";
             oSession.bBufferResponse = true;
         }
-        
+
         if ((null!=bpResponseURI) && oSession.uriContains(bpResponseURI)) {
             oSession["x-breakresponse"]="uri";
             oSession.bBufferResponse = true;
         }
 
     }
-    
-    static function OnBeforeResponse(oSession: Session) {
-        function xieru(){
-            oSession.utilDecodeResponse();
-            //œ˚≥˝±£¥Êµƒ«Î«Ûø…ƒ‹¥Ê‘⁄¬“¬Îµƒ«Èøˆ 
-            var fso;
-            var file;
-			if (oSession.ResponseHeaders["Content-Type"] == "image/png"){
-				fso = new ActiveXObject("Scripting.FileSystemObject");
-				file = fso.OpenTextFile("E:\date.txt",8 ,true);
-				file.close();
-			}else{
-				fso = new ActiveXObject("Scripting.FileSystemObject");
-				//Œƒº˛±£¥Ê¬∑æ∂£¨ø…◊‘∂®“Â
-				file = fso.OpenTextFile("E:\date.txt",8 ,true);
-				file.writeLine(oSession.url);
-				file.writeLine(oSession.GetRequestBodyAsString());
-				//file.writeLine("Response code: " + oSession.responseCode);
-				file.writeLine(oSession.GetResponseBodyAsString()); 
-				file.close();
-			}
-        }
-        function xieru1(){
-            oSession.utilDecodeResponse();
-            //œ˚≥˝±£¥Êµƒ«Î«Ûø…ƒ‹¥Ê‘⁄¬“¬Îµƒ«Èøˆ 
-            var fso;
-            var file;
-            var canshu;
-            var canshu1;
-            var canshu2;
-            var canshuzhi1;
-            var canshuzhi;
-            var canshulist;
-            var canshulist1;
-            var canshuzhi2
-            var canshudict = new Array();
-            canshu = oSession.GetRequestBodyAsString();
-            canshu1 = canshu.match((/\"(.*?)\"/g));
-            if(canshu1 == ""){
-                fso = new ActiveXObject("Scripting.FileSystemObject");
-                //Œƒº˛±£¥Ê¬∑æ∂£¨ø…◊‘∂®“Â
-                file = fso.OpenTextFile("E:\date.txt",8 ,true);
-                file.writeLine(oSession.url);
-                //file.writeLine("Response code: " + oSession.responseCode);
-                file.writeLine(oSession.GetResponseBodyAsString());
-                file.close();
-            }else{
-				if (oSession.ResponseHeaders["Content-Type"] == "image/png"){
-					fso = new ActiveXObject("Scripting.FileSystemObject");
-					//Œƒº˛±£¥Ê¬∑æ∂£¨ø…◊‘∂®“Â
-					file = fso.OpenTextFile("E:\date.txt",8 ,true);
-				//	file.writeLine(oSession.url);
-					//file.writeLine("Response code: " + oSession.responseCode);
-				//	file.writeLine(oSession.GetResponseBodyAsString());
-					file.close();
-				}
-				else{
-					canshuzhi = canshu1.join(","); 
-					canshuzhi = canshuzhi.replace(/\"/g, "");
-					canshu2 = canshu.match(/(.+\n--)/g);
-					canshuzhi1 = canshu2.join(",");
-					canshuzhi1 = canshuzhi1.replace(/\n--/g, "");
-					canshuzhi1 = canshuzhi1.replace(/[\r\n]/g, "");
-					//canshulist = canshuzhi.split("=");
-					//canshulist1 = canshuzhi1.split("!");
-					//for (var i=0;i<canshulist.length;i++){
-					//  canshudict[canshulist[i]] = canshulist1[i];
-					// }
-					fso = new ActiveXObject("Scripting.FileSystemObject");
-					//Œƒº˛±£¥Ê¬∑æ∂£¨ø…◊‘∂®“Â
-					file = fso.OpenTextFile("E:\date.txt",8 ,true);
-					file.writeLine(oSession.url);
-					//file.writeLine(oSession.GetType());		
-					file.writeLine(canshuzhi+","+canshuzhi1);
-					//file.writeLine(oSession.ResponseHeaders["Content-Type"]);
-					//file.writeLine(canshulist1);
-					//file.writeLine("Response code: " + oSession.responseCode);
-					file.writeLine(oSession.GetResponseBodyAsString()); 
-					file.close();}} 
-        }
-      
-        /*
-        var fanhuijiegou = false;
-        var fanhuijieguo1 = "";
-        if (m_Hide304s && oSession.responseCode == 304) {
-            oSession["ui-hide"] = "true";
-        }
-        //≈–∂œ∑µªÿΩ·π˚
-        if (oSession.host == "app.10brandchina.com"){
-            if (oSession.url == "app.10brandchina.com/api/app1.7/io.php"){
-                fanhuijiegou = true;
-            }
-        }
-         //–ﬁ∏ƒ∑µªÿΩ·π˚
-        if(fanhuijiegou)
-        {
-            var fanhuijieguo1 = oSession.GetResponseBodyAsString();
-            //fanhuijieguo1 = "{status:1,msg:\u7b2c1\u9875\u7684\u5185\u5bb9,totalPage:1,list:[]}";
-            //fanhuijieguo1 = oSession.url
-            fanhuijieguo1 = "{status:1,msg:\u7b2c1\u9875\u7684\u5185\u5bb9,totalPage:1,list:[{catid:39507,catname:\u52a0\u6e7f\u5668,status:1},{catid:42795,catname:\u5de5\u4e1a\u52a0\u6e7f\u5668,status:2},{catid:45678,catname:\u52a0\u6e7f\u5668,status:1}]}";
-            oSession.utilSetResponseBody(fanhuijieguo1);
-    
-        }
-       */
-        //–¥»ÎŒƒº˛1
-        if (oSession.fullUrl.Contains("app.10brandchina.com")) { 
-            xieru();
-        }else if(oSession.fullUrl.Contains("news.10brandchina.com")){  
-            xieru();
-            
-        }
-        else if (oSession.fullUrl.Contains("v11.10brandchina.com")){
-            
-            xieru();
-            
-        }
-        else if (oSession.fullUrl.Contains("www.10brandchina.com")){
-            
-            xieru();
-            
-        }
-        else if (oSession.fullUrl.Contains("app.10pinping.com")){
-            
-            xieru1();
-            
-        }
-    
-    }
-    
-   
 
 /*
-    // This function executes just before Fiddler returns an error that it has 
+    // This function executes just before Fiddler returns an error that it has
     // itself generated (e.g. "DNS Lookup failure") to the client application.
     // These responses will not run through the OnBeforeResponse function above.
     static function OnReturningError(oSession: Session) {
@@ -466,17 +520,17 @@ class Handlers
 
     // The Main() function runs everytime your FiddlerScript compiles
     static function Main() {
-        var today: Date = new Date();
-        FiddlerObject.StatusText = " CustomRules.js ±ª◊∞‘ÿ‘⁄: " + today;
-
+        //var today: Date = new Date();
+        //FiddlerObject.StatusText = " CustomRules.js was loaded at: " + today;
+        //var s = new ActiveXObject("WScript.Shell");
         // Uncomment to add a "Server" column containing the response "Server" header, if present
         // UI.lvSessions.AddBoundColumn("Server", 50, "@response.server");
 
         // Uncomment to add a global hotkey (Win+G) that invokes the ExecAction method below...
-        // UI.RegisterCustomHotkey(HotkeyModifiers.Windows, Keys.G, "screenshot"); 
+        // UI.RegisterCustomHotkey(HotkeyModifiers.Windows, Keys.G, "screenshot");
     }
 
-    // These static variables are used for simple breakpointing & other QuickExec rules 
+    // These static variables are used for simple breakpointing & other QuickExec rules
     BindPref("fiddlerscript.ephemeral.bpRequestURI")
     public static var bpRequestURI:String = null;
 
@@ -519,13 +573,13 @@ class Handlers
                 return true;
             case "bpu":
                 if (sParams.Length<2) {bpRequestURI=null; FiddlerObject.StatusText="RequestURI breakpoint cleared"; return false;}
-                bpRequestURI = sParams[1]; 
+                bpRequestURI = sParams[1];
                 FiddlerObject.StatusText="RequestURI breakpoint for "+sParams[1];
                 return true;
             case "bpa":
             case "bpafter":
                 if (sParams.Length<2) {bpResponseURI=null; FiddlerObject.StatusText="ResponseURI breakpoint cleared"; return false;}
-                bpResponseURI = sParams[1]; 
+                bpResponseURI = sParams[1];
                 FiddlerObject.StatusText="ResponseURI breakpoint for "+sParams[1];
                 return true;
             case "overridehost":
@@ -577,7 +631,7 @@ class Handlers
                 return true;
             case "nuke":
                 UI.actClearWinINETCache();
-                UI.actClearWinINETCookies(); 
+                UI.actClearWinINETCookies();
                 return true;
             case "screenshot":
                 UI.actCaptureScreenshot(false);
@@ -612,3 +666,6 @@ class Handlers
         }
     }
 }
+
+
+
